@@ -7,17 +7,29 @@
     // @ts-ignore
     import AutoComplete from 'simple-svelte-autocomplete'
 
+    let min = 1
+    let max = 10
+    let selected = 1;
+
+    let ignored: string[] = []
+    let ignoredStr = "water, crude-oil"
+    $: ignored = ignoredStr.split(",").map(s => s.trim()).filter(s => s.length > 0)
+
+    let zoom = 1
+
     let item = "military-science-pack"
     let json = "[Nothing yet]"
     let diag: string = ""
-    $: (async () => {try {
-        let optimal = optimizeCraft(item, ["water"], 20)[0]
-        json = JSON.stringify(optimal, null, 4)
-        diag = await renderFlowchart(renderOptimizedCraft(optimal.stacks))
+    let best = optimizeCraft(item, ignored, min, max).slice(0, 11);
+    let selCraft = optimizeCraft(item, ignored, selected, selected)[0]
+    let render = (async () => {try {
+        best = optimizeCraft(item, ignored, min, max).slice(0, 11)
+        selCraft = optimizeCraft(item, ignored, selected, selected)[0]
+        json = JSON.stringify(selCraft, null, 4)
+        diag = await renderFlowchart(renderOptimizedCraft(selCraft.stacks))
     } catch(e){
         json = "" + e
-        throw e
-    }})()
+    }})
 
 </script>
 
@@ -25,20 +37,68 @@
     <div class="prose">
         <h1>Factorio recipe optimizer</h1>
     </div>
-    <label>
-        Item:<div class="input-sm p-0 inline"></div>
-        <div class="join join-vertical bg-base-300 absolute pl-1">
-            <input type="text" class="join-item input input-bordered input-sm" bind:value={item}/>
-<!--            <button class="btn join-item btn-outline btn-sm">Button</button>-->
-<!--            <button class="btn join-item btn-outline btn-sm">Button</button>-->
+    <div class="flex">
+        <table class="w-72">
+            <tr>
+                <td>Item:</td>
+                <td class="autocomplete" colspan="3">
+                    <AutoComplete bind:selectedItem={item} items={outputs}/>
+                </td>
+            </tr>
+            <tr>
+                <td>Min:</td>
+                <td><input class="input w-full input-sm" type="number" bind:value={min}/></td>
+                <td>&nbsp;Cur.:</td>
+                <td><input class="input w-full input-sm" type="number" bind:value={selected}/></td>
+            </tr>
+            <tr>
+                <td>Max:</td>
+                <td><input class="input w-full input-sm" type="number" bind:value={max}/></td>
+                <td>&nbsp;Effi.:</td>
+                <td><input class="input w-full input-sm !bg-base-300" disabled value="{selCraft.efficiency}%"/></td>
+            </tr>
+        </table>
+        <div class="divider divider-horizontal"></div>
+        <div class="flex flex-col h-32 flex-wrap gap-2">
+            Best recipes:
+            {#each best as pos}
+                <div><a href="##" class="link" on:click={() => {selected = pos.count; render()}}>
+                    {pos.count}x @ {pos.efficiency}%
+                </a></div>
+            {/each}
         </div>
-    </label>
-    <AutoComplete bind:selectedItem={item} items={outputs} />
-    Under the label
-
-    <div>
-        {@html diag}
+        <div class="divider divider-horizontal ml-8"></div>
+        <div class="flex flex-col h-32 flex-wrap gap-2">
+            Ignored/input items:
+            <textarea class="textarea textarea-bordered resize-x h-20 w-72" bind:value={ignoredStr}/>
+        </div>
+        <div class="divider divider-horizontal"></div>
+        <div class="flex flex-col justify-evenly">
+            <button class="btn btn-primary" on:click={render}>Calculate!</button>
+            Zoom:
+            <div class="join">
+                {#each [1, 2] as level}
+                    <button class="btn btn-{(level === zoom) ? `primary` : `active`} btn-sm join-item"
+                    on:click={() => zoom = level}>{level}x</button>
+                {/each}
+            </div>
+        </div>
     </div>
-    <pre class="border-2 rounded w-[1000px]">{json}</pre>
+
+    <div class="overflow-x-scroll">
+        <div style="width: {zoom*95}vw; height: auto">
+            {@html diag}
+        </div>
+    </div>
+
+    <details>
+        <summary>Raw JSON & Error messages</summary>
+        <pre class="border-2 rounded w-[1000px]">{json}</pre>
+    </details>
 </div>
 
+<style>
+    .autocomplete > :global(*) {
+        height: 2.125rem;
+    }
+</style>

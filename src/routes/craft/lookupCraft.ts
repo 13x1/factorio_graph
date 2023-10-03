@@ -101,11 +101,11 @@ function useFromRequirement(r: ItemRequirement, count: Fraction) {
     r.usedTP = r.usedTP.add(F(count))
 }
 
-export function optimizeCraft(product: string, inputs: Array<string>, maxProduct = 100):
+export function optimizeCraft(product: string, inputs: Array<string>, min: number, max: number):
     Array<{count: number, efficiency: number, stacks: Array<TransformStack>}>
 {
     const results = []
-    for (let count = maxProduct; count <= maxProduct; count++) {
+    for (let count = min; count <= max; count++) {
         // insert seed (owo)
         const stacks: Array<TransformStack> = [{
             from: [{
@@ -115,7 +115,7 @@ export function optimizeCraft(product: string, inputs: Array<string>, maxProduct
             }],
             to: [],
             time: 0,
-            count: 0,
+            count: 1,
         }]
         // const seed = getTransformStack(product)!
         // console.log({product, seed})
@@ -156,10 +156,6 @@ export function optimizeCraft(product: string, inputs: Array<string>, maxProduct
                         // add more transforms to the producer until it can cover the input throughput
                         while (produced.unusedTP < input.unusedTP) { addToTransformStack(producer, 1) } 
 
-                        console.log("producing", stack.to[0]?.item.itemName, "from", input.item.itemName)
-                        console.log("before", before)
-                        console.log("after", [produced.unusedTP, input.unusedTP])
-                        
                         // register the input throughput as used
                         useFromRequirement(produced, input.unusedTP)
                         useFromRequirement(input, input.unusedTP)
@@ -212,19 +208,24 @@ export function optimizeCraft(product: string, inputs: Array<string>, maxProduct
 
 export function renderOptimizedCraft(stacks: Array<TransformStack>) {
     const diag: Flowchart = {
-        direction: "TB",
+        direction: "LR",
         edges: [],
         nodes: [],
         subgraphs: [],
     }
 
+    // 0 = output recipe
+    // 1 = final recipe
+    const final_transform = stacks[1]
 
-    
     for (const stack of stacks) {
         const subgraph: Subgraph = {
             id: crypto.randomUUID(),
-            label: stack.from.length === 0 ? `${stack.count}/s input` : `${stack.count} crafts, ${stack.time}s each`,
+            // label: stack.from.length === 0 ? `${stack.count}/s input` : `${stack.count} crafts, ${stack.time}s each`,
+            label: `${stack.count} crafts, ${stack.time}s each`,
         }
+        if (stack.from.length === 0) subgraph.label = `${stack.to[0].usedTP.mul(final_transform.time).div(final_transform.count)} in (${stack.to[0].usedTP.mul(final_transform.time)} i/b)`
+        if (stack.to.length === 0) subgraph.label = `${stack.from[0].usedTP.mul(final_transform.time).div(final_transform.count)} out (${stack.from[0].usedTP.mul(final_transform.time)} i/b)`
         diag.subgraphs?.push(subgraph)
         const inNodes = []
         for (const input of stack.from) {
@@ -238,8 +239,8 @@ export function renderOptimizedCraft(stacks: Array<TransformStack>) {
             diag.edges?.push({
                 to: node,
                 from: `output-${input.item.itemName}`,
-                label: `${input.usedTP}/s`,
-                length: 2
+                label: `${input.usedTP} i/s`,
+                length: 2,
             })
         }
         for (const output of stack.to) {
@@ -247,6 +248,7 @@ export function renderOptimizedCraft(stacks: Array<TransformStack>) {
                 id: `output-${output.item.itemName}`,
                 label: output.item.itemName + ' x' + output.item.count,
                 subgraph: subgraph.id,
+                shape: 'parallelogram'
             }
             diag.nodes?.push(node)
             for (const inNode of inNodes) {
