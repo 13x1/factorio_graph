@@ -1,13 +1,13 @@
 import { z } from 'zod';
 
-export let ingredient = z.object({
+export const ingredient = z.object({
     type: z.string(),
     name: z.string(),
     amount: z.number()
 })
 export type Ingredient = z.infer<typeof ingredient>
 
-export let product = z.object({
+export const product = z.object({
     type: z.string(),
     name: z.string(),
     probability: z.number(),
@@ -15,7 +15,7 @@ export let product = z.object({
 })
 export type Product = z.infer<typeof product>
 
-export let recipe = z.object({
+export const recipe = z.object({
     name: z.string(),
     category: z.string(),
     order: z.string(),
@@ -37,18 +37,46 @@ export let recipe = z.object({
 })
 export type Recipe = z.infer<typeof recipe>
 
-export let recipeData = z.record(z.string(), recipe)
+export const recipeData = z.record(z.string(), recipe)
 export type RecipeData = z.infer<typeof recipeData>
 
-export let itemStack = z.object({
-    item: z.string(),
+export const itemStack = z.object({
+    itemName: z.string(),
     count: z.number()
 })
 export type ItemStack = z.infer<typeof itemStack>
 
-export let transform = z.object({
+export const transform = z.object({
     from: z.array(itemStack),
     to: z.array(itemStack),
     time: z.number(),
 })
 export type Transform = z.infer<typeof transform>
+
+export const fraction = z.number(); z.object({
+    s: z.number(),
+    n: z.number(),
+    d: z.number(),
+})
+
+export const itemThroughput = z.object({
+    item: itemStack,
+    usedTP: fraction,
+    unusedTP: fraction,
+})
+export type ItemRequirement = z.infer<typeof itemThroughput>
+
+export const transformStack = z.object({
+    from: z.array(itemThroughput),
+    to: z.array(itemThroughput),
+    time: z.number(),
+    count: z.number(),
+})
+export type TransformStack = z.infer<typeof transformStack>
+
+export const optimalCrafts = z.object({
+    count: z.number(),
+    efficiency: z.number(),
+    stacks: z.array(transformStack),
+})
+export type OptimalCraft = z.infer<typeof optimalCrafts>

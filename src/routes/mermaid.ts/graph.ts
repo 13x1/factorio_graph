@@ -45,9 +45,9 @@ const M = {
     }
 } as const
 
-export let direction = z.enum(["TB", "BT", "LR", "RL"] as const)
+export const direction = z.enum(["TB", "BT", "LR", "RL"] as const)
 export type Direction = z.infer<typeof direction>
-export let node = z.object({
+export const node = z.object({
     id: z.string().default(() => "id" + crypto.randomUUID()),
     label: z.string().optional(),
     markdown: z.boolean().default(true),
@@ -56,7 +56,7 @@ export let node = z.object({
     style: z.string().optional()
 })
 export type Node = z.input<typeof node>
-export let edge = z.object({
+export const edge = z.object({
     from: z.union([z.string(), node]),
     to: z.union([z.string(), node]),
     label: z.string().optional(),
@@ -67,7 +67,7 @@ export let edge = z.object({
     toArr: zObjectKey(M.arrStyle).default("arrow"),
 });
 export type Edge = z.input<typeof edge>
-export let subgraph = z.object({
+export const subgraph = z.object({
     id: z.string().default(() => crypto.randomUUID()),
     label: z.string().optional(),
     markdown: z.boolean().default(true),
@@ -75,7 +75,7 @@ export let subgraph = z.object({
     direction: direction.optional()
 })
 export type Subgraph = z.input<typeof subgraph>
-export let flowchart = z.object({
+export const flowchart = z.object({
     direction: direction.default("TB"),
     nodes: z.array(node).default([]),
     edges: z.array(edge).default([]),
@@ -86,26 +86,26 @@ export type FlowchartParsed = z.output<typeof flowchart>
 
 
 export async function renderFlowchart(_data: Flowchart) {
-    let data = flowchart.parse(_data)
+    const data = flowchart.parse(_data)
     let str = ""
     str += "flowchart " + data.direction + "\n"
-    for (let subgraph of data.subgraphs) {
+    for (const subgraph of data.subgraphs) {
         str += `subgraph ${subgraph.id}`
         if (subgraph.label) str += ` [${M.renderObj(subgraph)}]`
         str += "\n"
         if (subgraph.direction) str += `direction ${subgraph.direction}\n`
         str += "end\n"
     }
-    for (let node of data.nodes) {
+    for (const node of data.nodes) {
         let subgraphs = 0
         let current: {inside?: string} = {inside: node.subgraph}
-        let subgraphCode: string[] = []
+        const subgraphCode: string[] = []
         while (current.inside) {
             subgraphs++
             subgraphCode.push("subgraph " + current.inside + "\n")
             current = data.subgraphs.find(s=>s.id == current.inside) || {}
         }
-        for (let code of subgraphCode.reverse()) {
+        for (const code of subgraphCode.reverse()) {
             str += code
         }
         str += node.id
@@ -116,22 +116,22 @@ export async function renderFlowchart(_data: Flowchart) {
             str += "end\n"
         }
     }
-    for (let edge of data.edges) {
+    for (const edge of data.edges) {
         // don't ask me why, ask the mermaid devs (what were they smoking?)
         if (edge.fromArr !== 'none' && edge.toArr === 'none') {
             edge.toArr = edge.fromArr
             edge.fromArr = 'none'
-            let tmp = edge.from
+            const tmp = edge.from
             edge.from = edge.to
             edge.to = tmp
         }
-        let from = id(edge.from)
-        let to = id(edge.to)
+        const from = id(edge.from)
+        const to = id(edge.to)
         str += from
-        let arr = M.edgeStyle[edge.line].char.repeat(2 + edge.length)
+        const arr = M.edgeStyle[edge.line].char.repeat(2 + edge.length)
         // again, what on earth is this
-        let arrLen = arr.length - Number(edge.toArr !== "none" && edge.line !== "dotted")
-        let padNeeded = arrLen - 2
+        const arrLen = arr.length - Number(edge.toArr !== "none" && edge.line !== "dotted")
+        const padNeeded = arrLen - 2
         // whoever greenlit this syntax is not seeing the gates of heaven
         str += ` ${M.arrStyle[edge.fromArr].from}${M.edgeStyle[edge.line].char}${M.edgeStyle[edge.line].pad.repeat(padNeeded)}` +
             `${M.edgeStyle[edge.line].char}${M.arrStyle[edge.toArr].to} `
@@ -140,7 +140,6 @@ export async function renderFlowchart(_data: Flowchart) {
         str += '\n'
     }
 
-    console.log(str)
     mermaid.initialize({
         theme: "dark",
     })
@@ -149,7 +148,7 @@ export async function renderFlowchart(_data: Flowchart) {
 
 function zObjectKey<T extends object>(object: T) {
     // swap keys and values
-    let obj: any = {}
+    const obj: Record<string, unknown> = {}
     Object.keys(object).map((k) => obj[k] = k)
     return z.nativeEnum(obj as { [key in keyof T]: key extends string ? key : "" })
 }
