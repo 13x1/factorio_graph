@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import Fraction from "fraction.js"
 
 export const ingredient = z.object({
     type: z.string(),
@@ -53,11 +54,7 @@ export const transform = z.object({
 })
 export type Transform = z.infer<typeof transform>
 
-export const fraction = z.number(); z.object({
-    s: z.number(),
-    n: z.number(),
-    d: z.number(),
-})
+export const fraction = z.instanceof(Fraction)
 
 export const itemThroughput = z.object({
     item: itemStack,
