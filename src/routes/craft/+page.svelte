@@ -60,16 +60,16 @@
         </table>
         <div class="divider divider-horizontal"></div>
         <div class="flex flex-col h-32 flex-wrap gap-2">
-            Best recipes:
+            <div>Best recipes:</div>
             {#each best as pos}
                 <div><a href="##" class="link" on:click={() => {selected = pos.count; render()}}>
                     {pos.count}x @ {pos.efficiency}%
                 </a></div>
             {/each}
         </div>
-        <div class="divider divider-horizontal ml-8"></div>
+        <div class="divider divider-horizontal"></div>
         <div class="flex flex-col h-32 flex-wrap gap-2">
-            Ignored/input items:
+            <div>Ignored/input items:</div>
             <textarea class="textarea textarea-bordered resize-x h-20 w-72" bind:value={ignoredStr}/>
         </div>
         <div class="divider divider-horizontal"></div>
@@ -100,5 +100,13 @@
 <style>
     .autocomplete > :global(*) {
         height: 2.125rem;
+    }
+    /* long sigh https://github.com/philipwalton/flexbugs#flexbug-14 */
+    .flex.flex-col.flex-wrap {
+        flex-direction: initial;
+        writing-mode: vertical-lr;
+    }
+    .flex.flex-col.flex-wrap > * {
+        writing-mode: initial;
     }
 </style>
