@@ -106,12 +106,14 @@ export function optimizeCraft(product: string, inputs: Array<string>, min: numbe
 {
     const results = []
     for (let count = min; count <= max; count++) {
+        const trans = getTransformByProduct(product)!
+console.log(trans)
         // insert seed (owo)
         const stacks: Array<TransformStack> = [{
             from: [{
                 item: {itemName: product, count: 1},
                 usedTP: F(0),
-                unusedTP: F(count),
+                unusedTP: F(trans.to[0].count).div(trans.time).mul(count),
             }],
             to: [],
             time: 0,
